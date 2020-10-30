@@ -1,0 +1,80 @@
+#!/bin/sh
+
+[ "$1" != "run" -a "$1" != "stop" ] && return
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+tr143_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+tr143_upload_launch() {
+	local fileName=/etc/usb-mode.json
+    	local start_time=`date "+%Y-%m-%dT%H:%M"`
+    	local start_second=`date "+%S"`
+	local default_ifname=`uci get network.wan1.ifname`
+	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState`" != "Requested" ] && return
+	local url=`tr143_get easycwmp.@local[0].Ul_UploadURL`
+	local dscp=`tr143_get easycwmp.@local[0].Ul_DSCP 0`
+	local prio=`tr143_get easycwmp.@local[0].Ul_EthernetPriority 0`
+	local iface=`tr143_get easycwmp.@local[0].Ul_Interface $default_ifname`
+	[ "$url" = "" ] && return
+	local iface_btx=`cat /sys/class/net/$iface/statistics/tx_bytes`
+	curlinfo=`curl --connect-timeout 8 -F "file=@$fileName" $url -skw "%{time_namelookup} %{time_connect} %{time_pretransfer} %{time_starttransfer} %{time_total} %{size_upload} %{http_code}" -Lo /dev/null`
+	local iface_etx=`cat /sys/class/net/$iface/statistics/tx_bytes`
+	local iface_tx=`expr $iface_etx - $iface_btx` 
+
+	tm_tcpsyn=$(echo "$curlinfo" | awk '{print $1}')
+	tm_tcpack=$(echo "$curlinfo" | awk '{print $2}')
+	tm_bom=$(echo "$curlinfo" | awk '{print $3}')
+	tm_rom=$(echo "$curlinfo" | awk '{print $4}')
+	tm_total=$(echo "$curlinfo" | awk '{print $5}')
+	dl_tx=$(echo "$curlinfo" | awk '{print $6}')
+	http_code=$(echo "$curlinfo" | awk '{print $7}')
+	
+	if [ "$http_code" == "200" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=Complete
+		local romtime=`echo "$start_second $tm_rom" | awk '{printf("%0.5f\n",$1+$2)}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_ROMTime=$start_time:$romtime
+		local bomtime=`echo "$start_second $tm_bom" | awk '{printf("%0.5f\n",$1+$2)}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_BOMTime=$start_time:$bomtime
+		local eomtime=`echo "$start_second $tm_total" | awk '{printf("%0.5f\n",$1+$2)}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_EOMTime=$start_time:$eomtime
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_TestBytesSent=$dl_tx
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_TotalBytesSent=$iface_tx
+		local tcpsyn=`echo "$start_second  $tm_tcpsyn" | awk '{printf("%0.5f\n",$1+$2)}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_TCPOpenRequestTime=$start_time:$tcpsyn
+		local tcpack=`echo "$start_second  $tm_tcpack" | awk '{printf("%0.5f\n",$1+$2)}'`
+        	$UCI_SET_VARSTATE easycwmp.@local[0].Ul_TCPOpenResponseTime=$start_time:$tcpack
+	elif [ "$http_code" == "000" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=Error_InitConnectionFailed
+	else
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=Error_TransferFailed
+	fi
+	event_dignostic
+}
+
+event_dignostic() {
+	local e=1
+	local i=0
+	while [ "$e" != 0 -a $i -lt 200 ]; do	
+		ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
+		e=$?
+		[ "$e" != "0" ] && sleep 1;
+		let i++
+	done
+}
+
+tr143_stop() {
+	local pids=`ps | grep tr143_upload_launch | grep -v grep | grep -v stop | awk '{print $1}'`
+	[ -z "$pids" ] && pids=`ps | grep tr143_upload_launch | grep -v grep | grep -v stop | awk '{print $2}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids 2>/dev/null
+		$UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=None
+	fi
+}
+
+[ "$1" == "run" ] && { tr143_upload_launch 2>/dev/null; exit 0; }
+[ "$1" == "stop" ] && tr143_stop 2>/dev/null

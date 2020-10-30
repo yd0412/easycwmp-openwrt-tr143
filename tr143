@@ -1,0 +1,136 @@
+#!/bin/sh
+#############################
+#   Entry point functuons   #
+#############################
+
+############# Capabilities ##################
+prefix_list="$prefix_list $DMROOT.Capabilities."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_Capabilities"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+entry_execute_method_root_Capabilities() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.Capabilities."*)
+		common_execute_method_obj "$DMROOT.Capabilities." "0"
+                common_execute_method_obj "$DMROOT.Capabilities.PerformanceDiagnostic." "0"
+ 	        common_execute_method_param "$DMROOT.Capabilities.PerformanceDiagnostic.DownloadTransports" "1" "tr143_get easycwmp.@local[0].Cap_Download HTTP" ""
+		common_execute_method_param "$DMROOT.Capabilities.PerformanceDiagnostic.UploadTransports" "1" "tr143_get easycwmp.@local[0].Cap_Upload HTTP" ""
+                return 0;
+                ;;
+        esac
+        return $E_INVALID_PARAMETER_NAME;
+
+}
+
+############# DownloadDiagnostics ##################
+prefix_list="$prefix_list $DMROOT.DownloadDiagnostics."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_DownloadDiagnostics"
+
+entry_execute_method_root_DownloadDiagnostics() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.DownloadDiagnostics."*)
+		common_execute_method_obj "$DMROOT.DownloadDiagnostics." "0"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DiagnosticsState" "1" "tr143_get easycwmp.@local[0].Dl_DiagnosticsState None" "tr143_dl_set_diagnostic_state"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DownloadURL" "1" "tr143_get easycwmp.@local[0].Dl_DownloadURL" "tr143_dl_set easycwmp.@local[0].Dl_DownloadURL"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.Interface" "1" "tr143_get easycwmp.@local[0].Dl_Interface" "tr143_dl_set easycwmp.@local[0].Dl_Interface"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.EthernetPriority" "1" "tr143_get easycwmp.@local[0].Dl_EthernetPriority 0" "tr143_dl_set easycwmp.@local[0].Dl_EthernetPriority"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DSCP" "1" "tr143_get easycwmp.@local[0].Dl_DSCP 0" "tr143_dl_set easycwmp.@local[0].Dl_DSCP"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TCPOpenRequestTime" "0" "tr143_get easycwmp.@local[0].Dl_TCPOpenRequestTime" "tr143_dl_set easycwmp.@local[0].Dl_TCPOpenRequestTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TCPOpenResponseTime" "0" "tr143_get easycwmp.@local[0].Dl_TCPOpenResponseTime" "tr143_dl_set easycwmp.@local[0].Dl_TCPOpenResponseTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.BOMTime" "0" "tr143_get easycwmp.@local[0].Dl_BOMTime" "tr143_dl_set easycwmp.@local[0].Dl_BOMTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.ROMTime" "0" "tr143_get easycwmp.@local[0].Dl_ROMTime" "tr143_dl_set easycwmp.@local[0].Dl_ROMTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.EOMTime" "0" "tr143_get easycwmp.@local[0].Dl_EOMTime" "tr143_dl_set easycwmp.@local[0].Dl_EOMTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TestBytesReceived" "0" "tr143_get easycwmp.@local[0].Dl_TestBytesReceived 0" "tr143_dl_set easycwmp.@local[0].Dl_TestBytesReceived" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TotalBytesReceived" "0" "tr143_get easycwmp.@local[0].Dl_TotalBytesReceived 0" "tr143_dl_set easycwmp.@local[0].Dl_TotalBytesReceived" "xsd:unsignedInt"
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+############# DownloadDiagnostics ##################
+prefix_list="$prefix_list $DMROOT.UploadDiagnostics."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_UploadDiagnostics"
+
+entry_execute_method_root_UploadDiagnostics() {
+        case "$1" in ""|"$DMROOT."|"$DMROOT.UploadDiagnostics."*)
+                common_execute_method_obj "$DMROOT.UploadDiagnostics." "0"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.DiagnosticsState" "1" "tr143_get easycwmp.@local[0].Ul_DiagnosticsState None" "tr143_ul_set_diagnostic_state"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.UploadURL" "1" "tr143_get easycwmp.@local[0].Ul_UploadURL" "tr143_ul_set easycwmp.@local[0].Ul_UploadURL"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.Interface" "1" "tr143_get easycwmp.@local[0].Dl_Interface" "tr143_ul_set easycwmp.@local[0].Dl_Interface"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.EthernetPriority" "1" "tr143_get easycwmp.@local[0].Dl_EthernetPriority 0" "tr143_ul_set easycwmp.@local[0].Dl_EthernetPriority"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.DSCP" "1" "tr143_get easycwmp.@local[0].Dl_DSCP 0" "tr143_ul_set easycwmp.@local[0].Dl_DSCP"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.TCPOpenRequestTime" "0" "tr143_get easycwmp.@local[0].Ul_TCPOpenRequestTime" "tr143_ul_set easycwmp.@local[0].Ul_TCPOpenRequestTime" "xsd:dateTime"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.TCPOpenResponseTime" "0" "tr143_get easycwmp.@local[0].Ul_TCPOpenResponseTime" "tr143_ul_set easycwmp.@local[0].Ul_TCPOpenResponseTime" "xsd:dateTime"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.BOMTime" "0" "tr143_get easycwmp.@local[0].Ul_BOMTime" "tr143_ul_set easycwmp.@local[0].Ul_BOMTime" "xsd:dateTime"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.ROMTime" "0" "tr143_get easycwmp.@local[0].Ul_ROMTime" "tr143_ul_set easycwmp.@local[0].Ul_ROMTime" "xsd:dateTime"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.EOMTime" "0" "tr143_get easycwmp.@local[0].Ul_EOMTime" "tr143_ul_set easycwmp.@local[0].Ul_EOMTime" "xsd:dateTime"
+		common_execute_method_param "$DMROOT.UploadDiagnostics.TestBytesSent" "0" "tr143_get easycwmp.@local[0].Ul_TestBytesSent 0" "tr143_ul_set easycwmp.@local[0].Ul_TestBytesSent" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UploadDiagnostics.TotalBytesSent" "0" "tr143_get easycwmp.@local[0].Ul_TotalBytesSent 0" "tr143_ul_set easycwmp.@local[0].Ul_TotalBytesSent" "xsd:unsignedInt"
+                return 0;
+                ;;
+        esac
+        return $E_INVALID_PARAMETER_NAME;
+}
+
+#######################################
+#   Data model parameters functions   #
+#######################################
+
+tr143_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+tr143_dl_set() {
+	tr143_dl_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].Dl_DiagnosticsState`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].Dl_DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+tr143_dl_set_diagnostic_state() {
+	local val="$1"
+	case $val in 
+		Requested)
+			tr143_dl_stop_diagnostic
+			$UCI_SET_VARSTATE easycwmp.@local[0].Dl_DiagnosticsState=Requested
+			common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/tr143_download_launch run &"
+			return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_VALUE;
+}
+
+tr143_dl_stop_diagnostic() {
+	local pids=`ps aux | grep tr143_download_launch | grep -v grep | awk '{print $2}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids
+		$UCI_SET_VARSTATE easycwmp.@local[0].Dl_DiagnosticsState=None
+	fi
+}
+
+tr143_ul_set() {
+        tr143_ul_stop_diagnostic
+        if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState`" != "Requested" ]; then
+                $UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=None
+        fi
+        $UCI_SET_VARSTATE $1=$2
+        return 0
+}
+
+tr143_ul_set_diagnostic_state() {
+        local val="$1"
+        case $val in
+                Requested)
+                        tr143_ul_stop_diagnostic
+                        $UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=Requested
+                        common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/tr143_upload_launch run &"
+                        return 0
+                ;;
+        esac
+        return $E_INVALID_PARAMETER_VALUE;
+}
+
