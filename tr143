@@ -73,6 +73,31 @@ entry_execute_method_root_UploadDiagnostics() {
         return $E_INVALID_PARAMETER_NAME;
 }
 
+############# UDPEchoConfig ##################
+prefix_list="$prefix_list $DMROOT.UDPEchoConfig."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_UDPEchoConfig"
+
+entry_execute_method_root_UDPEchoConfig() {
+        case "$1" in ""|"$DMROOT."|"$DMROOT.UDPEchoConfig."*)
+                common_execute_method_obj "$DMROOT.UDPEchoConfig." "0"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.Enable" "1" "tr143_get easycwmp.@local[0].UEcho_Enable 0" "tr143_do_udpecho"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.Interface" "1" "tr143_get easycwmp.@local[0].UEcho_Interface" "tr143_udpecho_set easycwmp.@local[0].UEcho_Interface"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.SourceIPAddress" "1" "tr143_get easycwmp.@local[0].UEcho_SourceIPAddress" "tr143_udpecho_set easycwmp.@local[0].UEcho_SourceIPAddress"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.UDPPort" "1" "tr143_get easycwmp.@local[0].UEcho_UDPPort 0" "tr143_udpecho_set easycwmp.@local[0].UEcho_UDPPort" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.EchoPlusEnabled" "1" "tr143_get easycwmp.@local[0].UEcho_EchoPlusEnabled" "tr143_udpecho_set easycwmp.@local[0].UEcho_EchoPlusEnabled" "xsd:boolean"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.EchoPlusSupported" "0" "tr143_get easycwmp.@local[0].UEcho_EchoPlusSupported 0" "tr143_udpecho_set easycwmp.@local[0].UEcho_EchoPlusSupported" "xsd:boolean"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.PacketsReceived" "0" "tr143_get easycwmp.@local[0].UEcho_PacketsReceived" "tr143_udpecho_set easycwmp.@local[0].UEcho_PacketsReceived" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.PacketsResponded" "0" "tr143_get easycwmp.@local[0].UEcho_PacketsResponded" "tr143_udpecho_set easycwmp.@local[0].UEcho_PacketsResponded" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.BytesReceived" "0" "tr143_get easycwmp.@local[0].UEcho_BytesReceived" "tr143_udpecho_set easycwmp.@local[0].UEcho_BytesReceived" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.BytesResponded" "0" "tr143_get easycwmp.@local[0].UEcho_BytesResponded" "tr143_udpecho_set easycwmp.@local[0].UEcho_BytesResponded" "xsd:unsignedInt"
+                common_execute_method_param "$DMROOT.UDPEchoConfig.TimeFirstPacketReceived" "0" "tr143_get easycwmp.@local[0].UEcho_TimeFirstPacketReceived 0" "tr143_udpecho_set easycwmp.@local[0].UEcho_TimeFirstPacketReceived" "xsd:dateTime"
+ 	        common_execute_method_param "$DMROOT.UDPEchoConfig.TimeLastPacketReceived" "0" "tr143_get easycwmp.@local[0].UEcho_TimeLastPacketReceived 0" "tr143_udpecho_set easycwmp.@local[0].UEcho_TimeLastPacketReceived" "xsd:dateTime"
+                return 0;
+                ;;
+        esac
+        return $E_INVALID_PARAMETER_NAME;
+}
+
 #######################################
 #   Data model parameters functions   #
 #######################################
@@ -105,7 +130,7 @@ tr143_dl_set_diagnostic_state() {
 }
 
 tr143_dl_stop_diagnostic() {
-	local pids=`ps aux | grep tr143_download_launch | grep -v grep | awk '{print $2}'`
+	local pids=`ps | grep tr143_download_launch | grep -v grep | awk '{print $1}'`
 	if [ -n "$pids" ]; then
 		kill -9 $pids
 		$UCI_SET_VARSTATE easycwmp.@local[0].Dl_DiagnosticsState=None
@@ -121,6 +146,14 @@ tr143_ul_set() {
         return 0
 }
 
+tr143_ul_stop_diagnostic() {
+        local pids=`ps | grep tr143_upload_launch | grep -v grep | awk '{print $1}'`
+        if [ -n "$pids" ]; then
+                kill -9 $pids
+                $UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=None
+        fi
+}
+
 tr143_ul_set_diagnostic_state() {
         local val="$1"
         case $val in
@@ -128,6 +161,31 @@ tr143_ul_set_diagnostic_state() {
                         tr143_ul_stop_diagnostic
                         $UCI_SET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState=Requested
                         common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/tr143_upload_launch run &"
+                        return 0
+                ;;
+        esac
+        return $E_INVALID_PARAMETER_VALUE;
+}
+
+tr143_udpecho_stop_diagnostic() {
+	common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/tr143_udpecho_launch stop"
+}
+
+tr143_udpecho_set() {
+        $UCI_SET_VARSTATE $1=$2
+        return 0
+}
+
+tr143_do_udpecho() {
+        local val="$1"
+        case $val in
+                0)
+                        tr143_udpecho_stop_diagnostic
+			return 0
+		;;
+		1)
+			tr143_udpecho_stop_diagnostic
+			common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/tr143_udpecho_launch run &"
                         return 0
                 ;;
         esac

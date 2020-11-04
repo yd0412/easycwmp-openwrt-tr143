@@ -14,7 +14,7 @@ tr143_upload_launch() {
 	local fileName=/etc/usb-mode.json
     	local start_time=`date "+%Y-%m-%dT%H:%M"`
     	local start_second=`date "+%S"`
-	local default_ifname=`uci get network.wan1.ifname`
+	local default_ifname=`route | grep default | grep UG | awk '{print $8}'`
 	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].Ul_DiagnosticsState`" != "Requested" ] && return
 	local url=`tr143_get easycwmp.@local[0].Ul_UploadURL`
 	local dscp=`tr143_get easycwmp.@local[0].Ul_DSCP 0`

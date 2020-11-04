@@ -1,0 +1,54 @@
+#!/bin/sh
+
+[ "$1" != "run" -a "$1" != "stop" -a "$1" != "set" ] && return
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+tr143_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+tr143_echo_launch() {
+
+	local lip=""
+	local iface=`$UCI_GET_VARSTATE easycwmp.@local[0].UEcho_Interface`
+        if [ -n "$iface" ]; then
+        	wanip=`ifconfig $iface | grep "inet addr" | awk '{print $2}' | awk -F ':' '{print $2}'`
+                if [ -n "$wanip" ]; then
+                	lip="-p $wanip"
+                fi
+        fi
+        local cip=`$UCI_GET_VARSTATE easycwmp.@local[0].UEcho_SourceIPAddress`
+        local cport=`$UCI_GET_VARSTATE easycwmp.@local[0].UEcho_UDPPort`
+        /usr/sbin/udpecho_server $lip -c $cip -p $cport &
+}
+
+tr143_echo_setvalue () {
+	local udpechoinfo=`cat /tmp/udpecho_result`
+	prx=$(echo "$udpechoinfo" | awk '{print $1}')
+        ptx=$(echo "$udpechoinfo" | awk '{print $2}')
+        brx=$(echo "$udpechoinfo" | awk '{print $3}')
+        btx=$(echo "$udpechoinfo" | awk '{print $4}')
+        ftm=$(echo "$udpechoinfo" | awk '{print $5}')
+        etm=$(echo "$udpechoinfo" | awk '{print $6}')
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_PacketsReceived=$prx
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_PacketsResponded=$ptx
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_BytesReceived=$brx
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_BytesResponded=$btx
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_TimeFirstPacketReceived=$ftm
+	$UCI_SET_VARSTATE easycwmp.@local[0].UEcho_TimeLastPacketReceived=$etm
+}
+
+tr143_echo_stop() {
+	local pids=`ps | grep udpecho_server | grep -v grep | awk '{print $1}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids 2>/dev/null
+	fi
+}
+
+[ "$1" == "run" ] && tr143_echo_launch 2>/dev/null
+[ "$1" == "stop" ] && tr143_echo_stop 2>/dev/null
+[ "$1" == "set" ] && tr143_echo_setvalue 2>/dev/null
+
